@@ -1,0 +1,84 @@
+<!doctype html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="theme-color" content="#f4f6fb">
+    <title>CSV Processor</title>
+    <link rel="stylesheet" href="/styles.css">
+    <script src="/app.js" defer></script>
+</head>
+<body>
+    <main class="page">
+        <header class="header">
+            <div class="brand-mark" aria-hidden="true">Σ</div>
+            <div>
+                <p class="eyebrow">CSV PROCESSOR</p>
+                <h1>CSV file processing</h1>
+                <p class="subtitle">Upload a file to calculate statistics for a numeric column.</p>
+            </div>
+        </header>
+
+        <section class="panel upload-panel" aria-labelledby="upload-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">NEW TASK</p>
+                    <h2 id="upload-title">Upload a file</h2>
+                </div>
+                <span class="step-badge">01</span>
+            </div>
+            <form id="upload-form">
+                <div class="form-grid">
+                    <label class="field">
+                        <span>CSV file</span>
+                        <input id="file-input" name="file" type="file" accept=".csv,text/csv" required>
+                        <small>Choose a file with column headers in the first row.</small>
+                    </label>
+                    <label class="field">
+                        <span>Numeric column</span>
+                        <input id="column-input" name="column" type="text" placeholder="For example, temperature" required>
+                        <small>Enter the exact column name from the header.</small>
+                    </label>
+                </div>
+                <div class="form-footer">
+                    <p id="form-message" class="message" role="status" aria-live="polite"></p>
+                    <button id="submit-button" class="button button-primary" type="submit">
+                        <span>Submit for processing</span>
+                        <span aria-hidden="true">→</span>
+                    </button>
+                </div>
+            </form>
+        </section>
+
+        <section class="panel tasks-panel" aria-labelledby="tasks-title">
+            <div class="section-heading">
+                <div>
+                    <p class="eyebrow">MONITORING</p>
+                    <h2 id="tasks-title">Tasks</h2>
+                </div>
+                <button id="refresh-button" class="button button-secondary" type="button">
+                    <span aria-hidden="true">↻</span> Refresh
+                </button>
+            </div>
+            <p id="tasks-message" class="message" role="status" aria-live="polite"></p>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th scope="col">ID</th>
+                            <th scope="col">Column</th>
+                            <th scope="col">Status</th>
+                            <th scope="col">Result</th>
+                        </tr>
+                    </thead>
+                    <tbody id="tasks-body">
+                        <tr><td class="empty-state" colspan="4">Loading tasks…</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            <p class="auto-refresh">The list refreshes automatically while tasks are running.</p>
+        </section>
+        <footer>CSV Processor <span>·</span> numeric data processing</footer>
+    </main>
+</body>
+</html>
