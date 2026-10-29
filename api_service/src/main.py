@@ -24,7 +24,7 @@ async def lifespan(fastapi_app: FastAPI):
 def create_app() -> FastAPI:
     fastapi_app = FastAPI(
         lifespan=lifespan,
-        docs_url="/api/openapi",
+        docs_url="/docs",
         openapi_url="/api/openapi.json",
         exception_handlers=exception_handlers
     )

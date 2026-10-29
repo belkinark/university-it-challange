@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse
 
-from src.api.v1.schemas.errors import ErrorPayload, ErrorResponse
+from src.api.schemas.errors import ErrorPayload, ErrorResponse
 from src.domain import exceptions as domain_exc
 
 EXC_MAP: dict[type[Exception], tuple[int, str]] = {
