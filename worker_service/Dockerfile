@@ -13,6 +13,6 @@ COPY worker_service ./worker_service
 
 RUN mkdir -p /app/logs
 
-EXPOSE 8001
+EXPOSE 8000
 
 CMD ["python", "-m", "src.main"]

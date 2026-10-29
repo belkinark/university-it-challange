@@ -25,6 +25,10 @@ services:
       context: .
       dockerfile: api_service/Dockerfile
     container_name: api_service
+    networks:
+      default:
+        aliases:
+          - api-service
     volumes:
       - ./migrations:/app/migrations
     ports:
