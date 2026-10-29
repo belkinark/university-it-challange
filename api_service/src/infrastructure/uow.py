@@ -1,9 +1,8 @@
 from typing import Self
 
-from redis.asyncio import Redis
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from src.infrastructure.repositories.messaging import RedisMessagingRepository
+from src.infrastructure.repositories.messaging import TaskiqMessagingRepository
 from src.infrastructure.repositories.task import SQLAlchemyTaskRepository
 from src.services.interfaces.repositories.messaging import IMessagingRepository
 from src.services.interfaces.repositories.task import ITaskRepository
@@ -11,13 +10,8 @@ from src.services.interfaces.uow import IUnitOfWork
 
 
 class DatabaseUnitOfWork(IUnitOfWork):
-    def __init__(
-        self,
-        session: AsyncSession,
-        redis: Redis,
-    ):
+    def __init__(self, session: AsyncSession):
         self.session = session
-        self.redis = redis
 
     async def __aenter__(self) -> Self:
         return self
@@ -47,4 +41,4 @@ class DatabaseUnitOfWork(IUnitOfWork):
 
     @property
     def messaging_repository(self) -> IMessagingRepository:
-        return RedisMessagingRepository(self.redis)
+        return TaskiqMessagingRepository()

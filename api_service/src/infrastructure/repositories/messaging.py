@@ -1,15 +1,17 @@
-from redis.asyncio import Redis
+from taskiq.kicker import AsyncKicker
 
-from src.domain.enums.event_type import EventType
+from src.core.config import settings
+from src.infrastructure.messaging.broker import broker
 from src.services.interfaces.repositories.messaging import IMessagingRepository
 
 
-class RedisMessagingRepository(IMessagingRepository):
-    def __init__(self, redis: Redis) -> None:
-        self._redis = redis
+class TaskiqMessagingRepository(IMessagingRepository):
+    def __init__(self) -> None:
+        self._kicker = AsyncKicker(
+            task_name=settings.services_queue.task_queue_name,
+            broker=broker,
+            labels={},
+        )
 
     async def create_task_messaging(self, task_id: int) -> None:
-        await self._redis.xadd(
-            EventType.TASKS,
-            {"task_id": str(task_id)},
-        )
+        await self._kicker.kiq(task_id=task_id)

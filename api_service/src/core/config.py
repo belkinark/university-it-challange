@@ -26,6 +26,11 @@ class ServiceSettings(ModelConfig):
     debug: bool = Field(default=True, validation_alias="DEBUG")
 
 
+class ServicesQueue(ModelConfig):
+    task_queue: str = Field(default="tasks", validation_alias="TASK_QUEUE")
+    task_queue_name: str = Field(default="process_task", validation_alias="TASK_QUEUE_NAME")
+
+
 class PostgresSettings(ModelConfig):
     host: str = Field(default="127.0.0.1", validation_alias="POSTGRES_HOST")
     port: int = Field(default=5432, validation_alias="POSTGRES_PORT")
@@ -69,6 +74,7 @@ class RedisSettings(ModelConfig):
 
 class Settings(BaseSettings):
     service: ServiceSettings = ServiceSettings()
+    services_queue: ServicesQueue = ServicesQueue()
     postgres: PostgresSettings = PostgresSettings()
     redis: RedisSettings = RedisSettings()
 
