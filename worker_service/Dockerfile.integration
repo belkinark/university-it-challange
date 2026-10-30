@@ -1,0 +1,29 @@
+FROM python:3.12-slim
+
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONPATH=/app/worker_service
+
+WORKDIR /app
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libpq-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY worker_service/requirements.txt ./requirements.txt
+COPY worker_service/requirements-test.txt ./requirements-test.txt
+RUN pip install --no-cache-dir \
+    -r requirements.txt \
+    -r requirements-test.txt
+
+COPY alembic.ini ./alembic.ini
+COPY migrations ./migrations
+COPY api_service ./api_service
+COPY worker_service ./worker_service
+
+RUN mkdir -p /app/api_service/logs /app/worker_service/logs
+
+WORKDIR /app/worker_service
+
+CMD ["sh", "-c", "PYTHONPATH=/app/api_service alembic -c /app/alembic.ini upgrade head && PYTHONPATH=/app/worker_service pytest tests/integration --cov=src --cov-report=term-missing --cov-report=xml:coverage-integration.xml"]

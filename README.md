@@ -61,6 +61,49 @@ docker compose down
 `docker compose down` keeps the PostgreSQL and Redis named volumes. To remove
 those volumes and their data as well, run `docker compose down -v`.
 
+## Run integration tests
+
+API integration tests use a separate PostgreSQL database and Redis instance
+defined in `docker-compose.api.integration.yaml`. From the repository root, run:
+
+```powershell
+docker compose -f docker-compose.api.integration.yaml run --build --rm integration-tests
+```
+
+Worker integration tests have their own isolated dependencies and compose file:
+
+```powershell
+docker compose -f docker-compose.worker.integration.yaml run --build --rm worker-integration-tests
+```
+
+Both test images apply database migrations and run coverage-enabled pytest.
+Their PostgreSQL and Redis services are isolated from the application stack
+and do not publish ports to the host. To stop and remove the test services:
+
+```powershell
+docker compose -f docker-compose.api.integration.yaml down
+docker compose -f docker-compose.worker.integration.yaml down
+```
+
+### CI test jobs
+
+GitHub Actions runs lint, unit-test, and integration-test jobs separately for
+both Python services. Unit tests are discovered under each service's
+`tests/unit` directory; integration tests run from `tests/integration` against
+PostgreSQL and Redis services. Each test job prints a coverage summary and
+uploads its XML report as a workflow artifact. The unit-test job is ready to
+run as soon as unit tests are added.
+
+To disable one category, add a repository Actions variable under **Settings →
+Secrets and variables → Actions → Variables**:
+
+| Variable | Value to skip the job |
+| --- | --- |
+| `CI_RUN_UNIT_TESTS` | `false` |
+| `CI_RUN_INTEGRATION_TESTS` | `false` |
+
+Both categories run when their variable is unset or set to any other value.
+
 ## Run on Minikube
 
 The Kubernetes manifests are in [`k8s/all.yaml`](k8s/all.yaml). They create

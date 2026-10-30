@@ -1,0 +1,44 @@
+name: api-integration-tests
+
+services:
+  integration-postgres:
+    image: postgres:15-alpine
+    environment:
+      POSTGRES_DB: integration_test_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: integration-test-password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d integration_test_db"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  integration-redis:
+    image: redis:7-alpine
+    command: redis-server --save "" --appendonly no
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+  integration-tests:
+    build:
+      context: .
+      dockerfile: api_service/Dockerfile.integration
+    environment:
+      POSTGRES_HOST: integration-postgres
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: integration_test_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: integration-test-password
+      POSTGRES_ECHO: "false"
+      REDIS_HOST: integration-redis
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      DEBUG: "false"
+    depends_on:
+      integration-postgres:
+        condition: service_healthy
+      integration-redis:
+        condition: service_healthy

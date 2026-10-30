@@ -5,12 +5,13 @@ on:
     branches:
       - main
     paths-ignore:
-      - 'README.md'
+      - "README.md"
   pull_request:
     branches:
       - main
     paths-ignore:
-      - 'README.md'
+      - "README.md"
+  workflow_dispatch:
 
 jobs:
   lint:
@@ -36,4 +37,145 @@ jobs:
 
       - name: Run Ruff
         working-directory: ${{ matrix.service }}
-        run: ruff check src
+        run: ruff check src tests
+
+  unit-tests:
+    name: Unit tests (${{ matrix.service }})
+    needs: lint
+    if: vars.CI_RUN_UNIT_TESTS != 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - api_service
+          - worker_service
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    env:
+      POSTGRES_PASSWORD: integration-test-password
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Prepare log directory
+        run: mkdir -p logs
+
+      - name: Run unit tests with coverage
+        run: |
+          if find tests/unit -type f -name 'test_*.py' -print -quit | grep -q .; then
+            pytest tests/unit \
+              --cov=src \
+              --cov-report=term-missing \
+              --cov-report=xml:coverage-unit.xml
+          else
+            echo "No unit tests yet; add tests under tests/unit to enable this job." \
+              >> "$GITHUB_STEP_SUMMARY"
+          fi
+
+      - name: Upload unit-test coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}-unit
+          path: ${{ matrix.service }}/coverage-unit.xml
+          if-no-files-found: ignore
+
+  integration-tests:
+    name: Integration tests (${{ matrix.service }})
+    needs: lint
+    if: vars.CI_RUN_INTEGRATION_TESTS != 'false'
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        service:
+          - api_service
+          - worker_service
+    defaults:
+      run:
+        working-directory: ${{ matrix.service }}
+    env:
+      POSTGRES_HOST: 127.0.0.1
+      POSTGRES_PORT: "5432"
+      POSTGRES_DB: integration_test_db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: integration-test-password
+      POSTGRES_ECHO: "false"
+      REDIS_HOST: 127.0.0.1
+      REDIS_PORT: "6379"
+      REDIS_DB: "0"
+      DEBUG: "false"
+    services:
+      postgres:
+        image: postgres:15-alpine
+        env:
+          POSTGRES_DB: integration_test_db
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: integration-test-password
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres -d integration_test_db"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd "redis-cli ping"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt -r requirements-test.txt
+
+      - name: Prepare log directory
+        run: mkdir -p logs
+
+      - name: Apply database migrations
+        run: |
+          if [ "${{ matrix.service }}" = "worker_service" ]; then
+            PYTHONPATH=../api_service alembic -c ../alembic.ini upgrade head
+          else
+            alembic -c ../alembic.ini upgrade head
+          fi
+
+      - name: Run integration tests with coverage
+        run: |
+          pytest tests/integration \
+            --cov=src \
+            --cov-report=term-missing \
+            --cov-report=xml:coverage-integration.xml
+
+      - name: Upload integration-test coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: coverage-${{ matrix.service }}-integration
+          path: ${{ matrix.service }}/coverage-integration.xml
+          if-no-files-found: ignore
